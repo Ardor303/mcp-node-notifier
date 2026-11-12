@@ -1,16 +1,19 @@
 {
   "name": "mcp-node-notifier",
   "version": "0.1.0",
-  "description": "Local MCP notifications with custom sounds and acknowledgable reminders",
+  "description": "Desktop notifications for MCP agents with custom audio and reminders you can acknowledge",
   "type": "module",
   "private": true,
   "license": "MIT",
+  "keywords": ["mcp", "notifications", "node-notifier", "desktop", "reminders"],
+  "files": ["src/", "scripts/play-audio.ps1", "scripts/demo.js", "assets/icons/", "assets/README.md", "assets/audio/README.md", "config.example*.json", "README*.md", "LICENSE", "CHANGELOG.md", "CONTRIBUTING.md", "THIRD_PARTY_NOTICES.md"],
   "engines": { "node": "^22.22.2 || ^24.15.0 || >=26.0.0" },
   "bin": { "mcp-node-notifier": "src/cli.js" },
   "scripts": {
     "start": "node src/cli.js",
     "test": "node --test",
-    "demo": "node scripts/demo.js"
+    "demo": "node scripts/demo.js",
+    "check:examples": "node src/cli.js --config config.example.json --check && node src/cli.js --config config.example.de.json --check"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.2",

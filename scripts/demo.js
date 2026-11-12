@@ -4,20 +4,28 @@ import { AudioPlayer } from '../src/audio.js';
 import { createDesktop } from '../src/desktop.js';
 import { NotificationManager } from '../src/manager.js';
 
-const { values } = parseArgs({ options: { config: { type: 'string' }, silent: { type: 'boolean' }, 'center-test': { type: 'boolean' }, debug: { type: 'boolean' }, 'max-minutes': { type: 'string' } } });
+const { values } = parseArgs({ options: { config: { type: 'string' }, lang: { type: 'string', default: 'en' }, silent: { type: 'boolean' }, 'center-test': { type: 'boolean' }, debug: { type: 'boolean' }, 'max-minutes': { type: 'string' } } });
+if (!['en', 'de'].includes(values.lang)) throw new Error('--lang must be en or de.');
 const maxMinutes = Number(values['max-minutes'] ?? (values['center-test'] ? 3 : 2));
 if (!Number.isFinite(maxMinutes) || maxMinutes < 1 || maxMinutes > 15) throw new Error('--max-minutes must be between 1 and 15.');
 if (values.debug) process.env.MCP_NOTIFIER_DEBUG = '1';
+const config = new ConfigStore(values.config || process.env.MCP_NOTIFIER_CONFIG);
+const { acknowledgeLabel } = await config.read();
+const german = values.lang === 'de';
 const manager = new NotificationManager({
-  config: new ConfigStore(values.config || process.env.MCP_NOTIFIER_CONFIG),
+  config,
   desktop: createDesktop(), audio: new AudioPlayer()
 });
 const result = await manager.notify({
   kind: 'waiting', task_id: 'interactive-demo',
-  title: 'MCP Node Notifier – Klicktest',
+  title: german ? 'MCP Node Notifier – Klicktest' : 'MCP Node Notifier – click test',
   message: values['center-test']
-    ? 'Bitte nach dem Ausblenden im Benachrichtigungscenter auf "Hab\'s mitbekommen" klicken.'
-    : 'Bitte "Hab\'s mitbekommen" anklicken. Bis dahin erinnert dieser Test alle 15 Sekunden.',
+    ? (german
+      ? `Bitte nach dem Ausblenden im Benachrichtigungscenter auf „${acknowledgeLabel}“ klicken.`
+      : `After the banner disappears, open Notification Center and click “${acknowledgeLabel}”.`)
+    : (german
+      ? `Bitte „${acknowledgeLabel}“ anklicken. Bis dahin erinnert dieser Test alle 15 Sekunden.`
+      : `Click “${acknowledgeLabel}”. Until then, this test repeats every 15 seconds.`),
   sound: !values.silent, repeat_minutes: values['center-test'] ? 2 : 0.25
 });
 console.log(JSON.stringify(result));

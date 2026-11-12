@@ -2,9 +2,9 @@ import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 
 export const KINDS = ['success', 'error', 'waiting', 'info'];
-const titles = { success: 'Aufgabe abgeschlossen', error: 'Aufgabe fehlgeschlagen', waiting: 'Antwort benötigt', info: 'Zwischenstand' };
+const titles = { success: 'Task completed', error: 'Task failed', waiting: 'Your input is needed', info: 'Progress update' };
 export const DEFAULTS = {
-  acknowledgeLabel: "Hab's mitbekommen",
+  acknowledgeLabel: 'Got it',
   repeatMinutes: 5,
   repeatMode: 'both',
   audio: { file: null, volume: 70, maxSeconds: 10 },

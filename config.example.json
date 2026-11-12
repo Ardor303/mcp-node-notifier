@@ -1,12 +1,12 @@
 {
-  "acknowledgeLabel": "Hab's mitbekommen",
+  "acknowledgeLabel": "Got it",
   "repeatMinutes": 5,
   "repeatMode": "both",
   "audio": { "file": null, "volume": 70, "maxSeconds": 10 },
   "profiles": {
-    "success": { "title": "Aufgabe abgeschlossen", "icon": null },
-    "error": { "title": "Aufgabe fehlgeschlagen", "icon": null },
-    "waiting": { "title": "Antwort benötigt", "icon": null },
-    "info": { "title": "Zwischenstand", "icon": null }
+    "success": { "title": "Task completed", "icon": "assets/icons/success.png" },
+    "error": { "title": "Task failed", "icon": "assets/icons/error.png" },
+    "waiting": { "title": "Your input is needed", "icon": "assets/icons/waiting.png" },
+    "info": { "title": "Progress update", "icon": "assets/icons/info.png" }
   }
 }

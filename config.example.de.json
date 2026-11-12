@@ -1,0 +1,12 @@
+{
+  "acknowledgeLabel": "Hab's mitbekommen",
+  "repeatMinutes": 5,
+  "repeatMode": "both",
+  "audio": { "file": null, "volume": 70, "maxSeconds": 10 },
+  "profiles": {
+    "success": { "title": "Aufgabe abgeschlossen", "icon": "assets/icons/success.png" },
+    "error": { "title": "Aufgabe fehlgeschlagen", "icon": "assets/icons/error.png" },
+    "waiting": { "title": "Deine Antwort wird benötigt", "icon": "assets/icons/waiting.png" },
+    "info": { "title": "Zwischenstand", "icon": "assets/icons/info.png" }
+  }
+}

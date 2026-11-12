@@ -1,0 +1,28 @@
+{
+  "generator": "OpenAI built-in image generation",
+  "generatedOn": "2026-11-12",
+  "export": {
+    "format": "PNG",
+    "width": 256,
+    "height": 256,
+    "transparent": true
+  },
+  "prompts": [
+    {
+      "name": "success",
+      "prompt": "Use case: stylized-concept. Asset type: small desktop notification icon, part of a matching four-status icon family for mcp-node-notifier. Generate a single emerald green softly rounded square medallion with one bold white check mark centered on it. Polished restrained soft 3D style, matte enamel, very subtle bevel and dimensionality, straight-on front view, simple strong silhouette legible at 32 pixels. Square composition, medallion occupies 80 percent of frame with equal transparent margins. True transparent background including all corners; no background scene, no ground plane, no drop shadow outside the tile. Only the specified symbol, no words, no extra symbols, no logos, no watermark. Output a square PNG with alpha, ideally 256 by 256 pixels."
+    },
+    {
+      "name": "error",
+      "prompt": "Use case: stylized-concept. Asset type: small desktop notification icon, part of a matching four-status icon family for mcp-node-notifier. Generate a single coral red softly rounded square medallion with one bold white X cross centered on it. Polished restrained soft 3D style, matte enamel, very subtle bevel and dimensionality, straight-on front view, simple strong silhouette legible at 32 pixels. Square composition, medallion occupies 80 percent of frame with equal transparent margins. True transparent background including all corners; no background scene, no ground plane, no drop shadow outside the tile. Only the specified symbol, no words, no extra symbols, no logos, no watermark. Output a square PNG with alpha, ideally 256 by 256 pixels."
+    },
+    {
+      "name": "waiting",
+      "prompt": "Use case: stylized-concept. Asset type: small desktop notification icon, part of a matching four-status icon family for mcp-node-notifier. Generate a single warm amber softly rounded square medallion with one bold white question mark centered on it. Polished restrained soft 3D style, matte enamel, very subtle bevel and dimensionality, straight-on front view, simple strong silhouette legible at 32 pixels. Square composition, medallion occupies 80 percent of frame with equal transparent margins. True transparent background including all corners; no background scene, no ground plane, no drop shadow outside the tile. Only the specified symbol, no words, no extra symbols, no logos, no watermark. Output a square PNG with alpha, ideally 256 by 256 pixels."
+    },
+    {
+      "name": "info",
+      "prompt": "Use case: stylized-concept. Asset type: small desktop notification icon, part of a matching four-status icon family for mcp-node-notifier. Generate a single clear sky blue softly rounded square medallion with one bold white lowercase information i centered on it. Polished restrained soft 3D style, matte enamel, very subtle bevel and dimensionality, straight-on front view, simple strong silhouette legible at 32 pixels. Square composition, medallion occupies 80 percent of frame with equal transparent margins. True transparent background including all corners; no background scene, no ground plane, no drop shadow outside the tile. Only the specified symbol, no words, no extra symbols, no logos, no watermark. Output a square PNG with alpha, ideally 256 by 256 pixels."
+    }
+  ]
+}

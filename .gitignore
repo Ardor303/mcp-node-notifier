@@ -1,5 +1,15 @@
 node_modules/
 .npm-cache/
 config.local.json
+config.local.*.json
 .local/
 *.log
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+coverage/
+*.tgz
+assets/audio/*
+!assets/audio/README.md

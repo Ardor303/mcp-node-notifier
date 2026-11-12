@@ -1,154 +1,212 @@
 # mcp-node-notifier
 
-Ein lokaler STDIO-MCP-Server für Desktop-Benachrichtigungen mit **node-notifier**. Er meldet erfolgreiche oder fehlgeschlagene Aufgaben, Rückfragen und Zwischenstände. Rückfragen können sich wiederholen, bis du **„Hab's mitbekommen“** anklickst.
+**English** · [Deutsch](README.de.md)
 
-Eigenständiges Projekt: keine Abhängigkeit von `mcp-windows-notify`. Keine Cloud, keine API-Schlüssel und kein KI-Aufruf für die Wiederholungen.
+Desktop notifications for your MCP agent: know when work finishes, when your input is needed, and when a milestone is reached.
 
-## Voraussetzungen
+<p>
+  <img src="assets/icons/success.png" alt="Success" width="64">
+  <img src="assets/icons/error.png" alt="Error" width="64">
+  <img src="assets/icons/waiting.png" alt="Waiting for input" width="64">
+  <img src="assets/icons/info.png" alt="Progress update" width="64">
+</p>
 
-- Node.js **22.22.2+ innerhalb der 22er-Reihe**, **24.15.0+ innerhalb der 24er-Reihe** oder **26+** (Vorgabe von node-notifier 12).
-- Windows, macOS oder Linux mit angemeldeter grafischer Sitzung.
-- Linux: `notify-send` aus libnotify. Für eigene MP3s zusätzlich `ffplay` aus FFmpeg; für WAV alternativ `paplay`.
+- **Four notification types:** success, error, waiting and info.
+- **Acknowledge reminders:** click **“Got it”** to stop a repeating reminder.
+- **Make it yours:** custom sounds, per-tool playback volume, icons and message templates.
+- **Local timers:** reminders run in the MCP process while your agent waits for an answer. No extra model calls, notification service account or API key.
+
+Built with [node-notifier](https://github.com/mikaelbr/node-notifier) and the [Model Context Protocol SDK](https://github.com/modelcontextprotocol/typescript-sdk). Windows is manually verified; macOS and Linux adapters are implemented and still need desktop testing.
+
+## Install
+
+### 1. Install Node.js and npm
+
+Download a supported **LTS version** from [nodejs.org](https://nodejs.org/en/download). Node.js 26 LTS is a suitable starting point.
+
+- **Windows:** run the `.msi` installer. Keep npm and the PATH option enabled, then open a new PowerShell window.
+- **macOS:** run the `.pkg` installer and open a new Terminal window.
+- **Linux:** select Linux on the download page and follow its installation instructions for your distribution or version manager. Ensure the installed version meets the requirement below.
+
+Verify the installation:
+
+```sh
+node --version
+npm --version
+```
+
+Supported Node.js versions: **22.22.2+ within v22**, **24.15.0+ within v24**, or **v26+**, as required by the installed node-notifier version. See also the [npm installation guide](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm/).
+
+### 2. Download this project and install its dependencies
+
+Use **Code → Download ZIP** on this repository, extract it, and open a terminal in the extracted folder. Alternatively, install [Git](https://git-scm.com/downloads) and clone the HTTPS URL shown by the repository's Code button:
+
+```sh
+git clone YOUR_REPOSITORY_URL mcp-node-notifier
+cd mcp-node-notifier
+```
+
+Replace `YOUR_REPOSITORY_URL` with that actual URL. Then run:
 
 ```sh
 npm ci
-npm test
-node src/cli.js --config /pfad/config.json --check
 ```
 
-Ohne `--config` werden die eingebauten Standardeinstellungen verwendet. Alternativ setzt `MCP_NOTIFIER_CONFIG` den Konfigurationspfad. `--check` prüft Einstellungen und vorhandene Assets ohne Meldung oder Audiowiedergabe.
+**This installs node-notifier, the MCP SDK and their dependencies automatically.** You do not need `npm install -g node-notifier` or a separate installation of our MCP package. There is no build step; run it directly from this folder. [`npm ci`](https://docs.npmjs.com/cli/v11/commands/npm-ci/) uses the committed lockfile.
 
-## In Codex einbinden
+On Windows, if PowerShell blocks `npm.ps1`, use `npm.cmd` in place of `npm` in these commands.
 
-Beispiel für die globale `~/.codex/config.toml` unter Windows:
+### 3. Linux: add desktop tools
+
+Windows and macOS notification helpers are included with node-notifier. Linux needs `notify-send`; custom MP3 playback also needs `ffplay`. On Debian/Ubuntu:
+
+```sh
+sudo apt update
+sudo apt install libnotify-bin ffmpeg
+```
+
+Other distributions provide these tools through their package managers. For WAV playback, `paplay` is an alternative to `ffplay`. Action buttons require libnotify 0.7.10+ and a notification daemon that supports actions. Run the MCP in your logged-in desktop session.
+
+### 4. Choose a configuration and test it
+
+Copy `config.example.json` to `config.local.json` in the same folder. In PowerShell, Bash or Zsh:
+
+```sh
+cp config.example.json config.local.json
+node src/cli.js --config config.local.json --check
+npm run demo -- --config config.local.json --lang en
+```
+
+The example includes the four icons and uses your system notification sound. **No audio file is required.** The demo repeats every 15 seconds until you click **“Got it”**, or stops after two minutes. In Windows Notification Center, expand the notification using the small arrow next to its timestamp to reveal the button.
+
+For German titles and buttons, copy `config.example.de.json` instead and use `--lang de` for the demo. The built-in defaults without a configuration are English. `--check` validates configuration and assets without showing a notification or playing sound.
+
+## Connect your MCP client
+
+Configure a **local STDIO server**. The command is your Node.js executable; the arguments point to `src/cli.js` and your configuration. Use absolute paths. Find Node.js with `(Get-Command node).Source` in PowerShell or `command -v node` on macOS/Linux.
+
+For Codex, add an entry to your user-level `~/.codex/config.toml`. Example Windows paths:
 
 ```toml
 [mcp_servers.node-notifier]
-command = "D:/nodejs/node.exe"
-args = ["D:/mcp-node-notifier/src/cli.js", "--config", "D:/mcp-windows-notify/config.json"]
+command = "C:/Program Files/nodejs/node.exe"
+args = ["D:/mcp-node-notifier/src/cli.js", "--config", "D:/mcp-node-notifier/config.local.json"]
 cwd = "D:/mcp-node-notifier"
 startup_timeout_sec = 20
 tool_timeout_sec = 30
 ```
 
-In anderen MCP-Clients den gleichen Befehl und dieselben Argumente als STDIO-Server eintragen. Anschließend den MCP-Server beziehungsweise den Client neu starten. In einem ChatGPT-Web-Chat wird diese lokale Codex-Konfiguration nicht automatisch geladen.
+Adjust all paths to your installation. On macOS/Linux, use the absolute paths on that machine. Other local MCP clients use the same command and arguments in their own STDIO configuration. Restart the MCP server or client after adding it. A ChatGPT web conversation does not automatically load this local configuration.
 
-## Werkzeuge
+Example instruction for your agent:
+
+> Use node-notifier when you finish, need my input, or reach a milestone I asked about. If you need an answer, remind me every five minutes until I acknowledge it.
+
+This is a tool the agent calls; installing it alone does not add automatic hooks to every agent event.
+
+## Tools
 
 ### `notify`
 
-Vier Meldungstypen:
-
-- `success`: Aufgabe erfolgreich abgeschlossen, einmalig.
-- `error`: Aufgabe fehlgeschlagen, einmalig.
-- `waiting`: Agent wartet auf eine Antwort; Quittierungsbutton und optionale Wiederholungen.
-- `info`: Zwischenstand oder Meilenstein, einmalig.
+- `success`: “Task completed” — a one-time completion notification.
+- `error`: “Task failed” — a one-time failure notification.
+- `waiting`: “Your input is needed” — an acknowledgement button and optional repeats.
+- `info`: “Progress update” — a one-time milestone notification.
 
 ```json
 {
   "kind": "waiting",
   "task_id": "chat-123:asset-import",
-  "message": "Welche der beiden Importvarianten soll ich verwenden?",
+  "message": "Which of the two import options should I use?",
   "repeat_minutes": 5,
   "repeat_mode": "both"
 }
 ```
 
-`task_id` muss für `waiting` vorhanden und für den Chat beziehungsweise die Aufgabe eindeutig sein. Eine neue Rückfrage mit derselben ID ersetzt die alte Erinnerung. `success` oder `error` mit derselben ID stoppt die alte Rückfrage ebenfalls. `info` lässt sie weiterlaufen.
+Use a stable `task_id` unique to the chat/task. It is required for `waiting`. A new waiting notification for the same task replaces the previous reminder. A `success` or `error` notification with the same task ID stops it too; `info` leaves it running.
 
-Weitere Optionen:
+Optional settings:
 
-- `title`: eigener Titel, sonst Titel aus dem Profil.
-- `sound: false`: stumme Meldung.
-- `repeat_minutes: 0`: Rückfrage nur einmal anzeigen; sonst mindestens 0,1 Minuten und maximal 1440 Minuten. Standard: 5 Minuten. Wiederholungen gelten nur für `waiting`.
-- `repeat_mode`: `both`, `sound` oder `notification`. Die erste Rückfrage zeigt immer einen quittierbaren Hinweis. `sound` wiederholt danach nur die eigene Audiodatei und setzt eine konfigurierte Datei mit Lautstärke > 0 voraus.
+- `title`: override the configured profile title.
+- `sound: false`: mute this notification.
+- `repeat_minutes`: waiting only; `0` disables repeats, otherwise 0.1–1440 minutes. Default: 5 minutes.
+- `repeat_mode`: `both`, `notification` or `sound`. The first delivery always shows an acknowledgement button. Sound-only repeats require a custom audio file, nonzero volume and sound enabled.
 
-Die Antwort enthält die Benachrichtigungs-ID. Das Werkzeug wartet **nicht** darauf, dass ein Mensch klickt oder der Ton fertig abgespielt wird. Es bestätigt die Einplanung; das Betriebssystem kann die sichtbare Anzeige trotzdem unterdrücken.
+The tool returns an ID promptly, without waiting for playback or a human click. It confirms scheduling; OS settings may still suppress display. Later delivery or playback errors appear in `list_notifications`.
 
 ### `acknowledge_notification`
 
 ```json
-{ "id": "die-id-aus-notify" }
+{ "id": "the-id-returned-by-notify" }
 ```
 
-Stoppt den Timer und eine laufende eigene Audiowiedergabe für genau diese Meldung. Der Button führt dieselbe Aktion aus. Bloßes Ausblenden, der Zeitablauf des Banners oder ein Klick auf den Meldungstext quittieren sie nicht. Im Windows-Benachrichtigungscenter eingeklappte Meldungen zuerst über den kleinen Pfeil neben der Uhrzeit aufklappen, um den Button zu sehen.
+Stops repeats and current custom audio for that notification. The button does the same. Dismissing the banner, letting it time out, or clicking its body does **not** acknowledge it.
 
-**Quittieren bedeutet nur „Hinweis gesehen“. Es ist keine Antwort, Zustimmung oder Ausführungsfreigabe für den Agenten.**
+**Acknowledgement means “I saw the notification.” It is not an answer or permission for the agent to proceed.**
 
 ### `list_notifications`
 
-Zeigt den Zustand der Meldungen dieser MCP-Verbindung: beispielsweise `active`, `acknowledged`, `superseded` oder `sent`, die Anzahl der Zustellungen und `last_error`. Auch erst später erkannte Anzeige- oder Audiofehler erscheinen hier. Behält aktive Meldungen und eine begrenzte Historie.
+Call with `{}` to inspect notifications in this MCP connection: state, delivery count, repeat settings and `last_error`. States include `active`, `sent`, `acknowledged` and `superseded`.
 
-## Eigene Töne, Icons und Texte
+## Custom sounds, icons and text
 
-`config.example.json` ist die portable Vorlage. Konfiguration und persönliche Assets dürfen außerhalb des Git-Projekts liegen, etwa so:
+Both example configurations work as supplied. Edit your copy in `config.local.json`; it is ignored by Git.
 
-```text
-D:/mcp-windows-notify/
-  config.json
-  audio/MortalKombat.mp3
-  icons/success.png
-  icons/error.png
-  icons/waiting.png
-  icons/info.png
-  messages/waiting.txt
-```
+### Add your own sound
 
-Beispielkonfiguration (die referenzierten Dateien müssen existieren):
+Place your recording at `assets/audio/NotifySound.mp3`, then change the `audio` section:
 
 ```json
 {
-  "acknowledgeLabel": "Hab's mitbekommen",
-  "repeatMinutes": 5,
-  "repeatMode": "both",
-  "audio": { "file": "audio/MortalKombat.mp3", "volume": 50, "maxSeconds": 4 },
-  "profiles": {
-    "waiting": {
-      "title": "Deine Antwort wird benötigt",
-      "icon": "icons/waiting.png",
-      "audio": { "volume": 70 },
-      "messageFile": "messages/waiting.txt"
-    }
+  "audio": {
+    "file": "assets/audio/NotifySound.mp3",
+    "volume": 50,
+    "maxSeconds": 4
   }
 }
 ```
 
-- Relative Pfade beziehen sich auf den Ordner der Konfigurationsdatei, nicht auf das aktuelle Projekt.
-- Eigene Töne: **WAV oder MP3**, Lautstärke **0–100**, Abspieldauer **0,1–60 Sekunden**. Die allgemeine Geräte-/Systemlautstärke bleibt die Obergrenze. Bei Datei-Wiedergabe bleibt der native Meldungston stumm.
-- `file: null` verwendet den nativen Meldungston. Eine separate Lautstärke zwischen 1 und 100 lässt sich dabei nicht garantieren; dafür eine Datei angeben. `volume: 0` schaltet den Ton ab.
-- Icons: lokale **PNG-Dateien**, maximal **1024 × 1024**, höchstens **200 KiB**. 256 × 256 mit Transparenz ist zweckmäßig. `icon: null` verwendet die Plattformdarstellung.
-- Textvorlagen sind UTF-8-Dateien mit den optionalen Platzhaltern `{{task}}` und `{{message}}`. Es wird kein Code ausgeführt.
-- Die Profile `success`, `error`, `waiting`, `info` können jeweils `title`, `icon`, `messageFile` und `audio` überschreiben.
-- Audio, Icons und Texte werden bei jeder Zustellung erneut gelesen. Das Intervall einer bereits laufenden Erinnerung bleibt bis zu einer neuen `notify`-Anfrage gleich.
+`NotifySound.mp3` is an optional filename, **not a bundled recording**. Use your own recording or one you may redistribute. Leave `file: null` until the file exists.
 
-Persönliche Medien gehören nicht ins öffentliche Repository. `config.local.json` und `.local/` sind bereits von Git ausgeschlossen.
+- Audio: WAV or MP3, volume **0–100**, playback limit **0.1–60 seconds**. Device/system volume remains the upper bound.
+- Custom-file playback silences the native toast sound. `file: null` uses the system sound, whose volume cannot be independently controlled here. `volume: 0` mutes sound.
+- Each profile can override `audio`, for example a different file or volume for a waiting notification.
 
-## Plattformunterschiede
+### Icons and message templates
 
-- **Windows:** native Toasts über das mit node-notifier gelieferte SnoreToast. Ein eigener langlebiger Callback-Kanal hält die Quittierung auch nach dem Ausblenden des Banners erreichbar. Eigene Audiodateien spielt Windows MediaPlayer über einen versteckten PowerShell-Prozess ab; kein Konsolenfenster und keine Änderung der globalen Soundeinstellungen.
-- **macOS:** node-notifier/terminal-notifier für Meldungen und Buttons, `afplay` für eigene Töne. Das Icon der sendenden App wird vom System bestimmt; eigene PNG-Meldungsicons werden dort von node-notifier nicht unterstützt.
-- **Linux:** node-notifier/notify-send. Buttons und ihr Verhalten hängen vom Notification-Daemon und der libnotify-Version ab. Falls der Desktop keine Buttons anbietet, bleibt `acknowledge_notification` verfügbar. Eigene Töne benötigen einen der oben genannten Player.
+- Included icons: `assets/icons/success.png`, `error.png`, `waiting.png`, `info.png` — transparent 256 × 256 PNGs.
+- Replacement icons must be PNG, at most **1024 × 1024** and **200 KiB**. `icon: null` uses the platform default. macOS uses the sending app's icon.
+- Profiles support `title`, `icon`, `audio` and optional `messageFile`. A UTF-8 text template may contain `{{message}}` and `{{task}}`; it executes no code.
+- Relative paths resolve from the configuration file's folder. You can keep settings and personal assets elsewhere; adjust paths or copy the referenced assets with them.
+- Audio, icons and templates reload on each delivery. An existing reminder's interval stays unchanged until a new `notify` call.
+- `MCP_NOTIFIER_CONFIG` can supply the configuration path instead of `--config`.
 
-„Nicht stören“, deaktivierte Benachrichtigungen, fehlende Berechtigungen, stummgeschaltete Ausgabegeräte oder eine nicht vorhandene grafische Sitzung können die Ausgabe verhindern. Das ist kein garantierter Zustellkanal.
+See [asset details](assets/README.md) and [third-party notices](THIRD_PARTY_NOTICES.md). Personal audio is ignored by Git and excluded from the package.
 
-## Lebensdauer und Test
+## Platform behavior and troubleshooting
 
-Die Timer laufen lokal im MCP-Prozess und funktionieren auch während der Agent auf eine Antwort wartet. Es gibt **keinen Autostart-Dienst**. Wenn der MCP-Client den Server beendet, enden die Erinnerungen. Zustände werden nicht über Prozessneustarts hinweg wiederhergestellt. Mehrere MCP-Verbindungen haben getrennte Zustände.
+- **Windows:** SnoreToast supplies native notifications. A persistent callback channel handles acknowledgement clicks after the banner disappears. Expand collapsed notifications to reveal their button. Custom sound uses Windows MediaPlayer through a hidden PowerShell process.
+- **macOS:** terminal-notifier supplies notifications/buttons; `afplay` plays custom audio. Allow notification permission when prompted. Custom notification PNGs are not supported.
+- **Linux:** notify-send supplies notifications/buttons; `ffplay` or `paplay` plays audio. Button availability, history and closing behavior depend on the desktop daemon. The tool can stop reminders even if the desktop offers no button.
 
-Ein manueller Test zeigt eine Rückfrage mit 15-Sekunden-Intervall und endet nach dem Buttonklick, spätestens nach zwei Minuten:
+If nothing appears, check the global notification switch, the sender app's notification settings and Do Not Disturb. If there is no sound, check the configured file, volume and output device. A valid `--check` result does not prove desktop delivery.
+
+Timers live in the MCP process, not a separate autostart service. They continue while the agent waits **as long as the client keeps that process running**. Closing the server stops reminders; state does not survive a restart. Different MCP connections have separate state.
+
+## Development
 
 ```sh
-npm run demo -- --config config.local.json
+npm test
+npm run check:examples
+npm pack --dry-run
 ```
 
-Mit `--silent` ohne Ton. Mit `--center-test` beträgt das Intervall zwei Minuten und die maximale Testdauer drei Minuten, damit sich der Klick auf die ausgeblendete Meldung im Windows-Benachrichtigungscenter prüfen lässt. `--debug` protokolliert zusätzlich Windows-Klickereignisse auf stderr.
+The automated suite does not play sounds or open notifications. The GitHub Actions workflow is configured for Windows, macOS and Linux across Node.js 22, 24 and 26. Manual desktop testing remains separate.
 
-Die automatischen Tests prüfen Timer, Quittierung, Aufgabenisolation, stille Meldungen, Fehlerzustände, Konfigurationsänderungen, Plattformargumente und die echte MCP-STDIO-Verbindung. macOS und Linux müssen zusätzlich auf den jeweiligen Desktops praktisch getestet werden.
+Demo options: `--silent`, `--lang en|de`, `--center-test` (two-minute repeats, three-minute limit), `--max-minutes 1..15`, `--debug` (Windows event diagnostics).
 
-## Grundlagen
+Read [CONTRIBUTING.md](CONTRIBUTING.md) and [CHANGELOG.md](CHANGELOG.md). The package is currently marked private to prevent accidental npm publication; source installation works as described above.
 
-- [node-notifier](https://github.com/mikaelbr/node-notifier)
-- [SnoreToast](https://github.com/KDE/snoretoast)
-- [Model Context Protocol TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk)
+## License
 
-Lizenz: MIT. Die Abhängigkeiten und mitgelieferten Plattformprogramme behalten ihre jeweiligen Lizenzen.
+[MIT](LICENSE) for project code and included icons. Dependencies and native helpers retain their own licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
