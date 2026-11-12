@@ -1,0 +1,19 @@
+{
+  "name": "mcp-node-notifier",
+  "version": "0.1.0",
+  "description": "Local MCP notifications with custom sounds and acknowledgable reminders",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "engines": { "node": "^22.22.2 || ^24.15.0 || >=26.0.0" },
+  "bin": { "mcp-node-notifier": "src/cli.js" },
+  "scripts": {
+    "start": "node src/cli.js",
+    "test": "node --test",
+    "demo": "node scripts/demo.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "node-notifier": "12.1.0"
+  }
+}
