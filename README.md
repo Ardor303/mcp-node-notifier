@@ -1,6 +1,6 @@
 # mcp-node-notifier
 
-**English** · [Deutsch](README.de.md)
+**English** · [Deutsch](README.de.md) · [GitHub](https://github.com/Ardor303/mcp-node-notifier)
 
 Desktop notifications for your MCP agent: know when work finishes, when your input is needed, and when a milestone is reached.
 
@@ -39,14 +39,14 @@ Supported Node.js versions: **22.22.2+ within v22**, **24.15.0+ within v24**, or
 
 ### 2. Download this project and install its dependencies
 
-Use **Code → Download ZIP** on this repository, extract it, and open a terminal in the extracted folder. Alternatively, install [Git](https://git-scm.com/downloads) and clone the HTTPS URL shown by the repository's Code button:
+Use **Code → Download ZIP** on this repository, extract it, and open a terminal in the extracted folder. Alternatively, install [Git](https://git-scm.com/downloads) and clone this repository. Run the following commands from the parent folder where you want the new `mcp-node-notifier` folder to be created:
 
 ```sh
-git clone YOUR_REPOSITORY_URL mcp-node-notifier
+git clone https://github.com/Ardor303/mcp-node-notifier.git mcp-node-notifier
 cd mcp-node-notifier
 ```
 
-Replace `YOUR_REPOSITORY_URL` with that actual URL. Then run:
+Then install the dependencies inside the project folder:
 
 ```sh
 npm ci
