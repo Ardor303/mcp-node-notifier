@@ -25,15 +25,47 @@ export function text(value, name, max = 1000) {
   return value;
 }
 
+function object(value, name) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`${name} must be an object.`);
+  return value;
+}
+
+export function profileName(value) {
+  if (typeof value !== 'string' || !/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(value)) {
+    throw new Error('Profile names must start with a letter and contain at most 64 letters, digits, underscores or hyphens.');
+  }
+  return value;
+}
+
 export class ConfigStore {
   constructor(file) { this.file = file ? path.resolve(file) : null; }
 
   async read() {
-    const raw = this.file ? JSON.parse(await readFile(this.file, 'utf8')) : {};
+    const raw = object(this.file ? JSON.parse(await readFile(this.file, 'utf8')) : {}, 'Configuration');
+    const configured = object(raw.profiles ?? {}, 'profiles');
+    if (raw.audio !== undefined) object(raw.audio, 'audio');
+    for (const [name, profile] of Object.entries(configured)) {
+      profileName(name);
+      object(profile, `profiles.${name}`);
+      if (profile.audio !== undefined) object(profile.audio, `profiles.${name}.audio`);
+      if (KINDS.includes(name)) {
+        if (profile.kind !== undefined && profile.kind !== name) throw new Error(`Built-in profile ${name} must keep kind=${name}.`);
+      } else if (!KINDS.includes(profile.kind)) {
+        throw new Error(`profiles.${name}.kind must be success, error, waiting or info.`);
+      }
+    }
+    const profiles = Object.fromEntries(KINDS.map(kind => [kind, {
+      ...DEFAULTS.profiles[kind], ...configured[kind], kind
+    }]));
+    for (const [name, profile] of Object.entries(configured)) {
+      if (KINDS.includes(name)) continue;
+      const base = profiles[profile.kind];
+      profiles[name] = { ...base, ...profile, audio: { ...base.audio, ...profile.audio } };
+    }
     const value = {
       ...DEFAULTS, ...raw,
       audio: { ...DEFAULTS.audio, ...raw.audio },
-      profiles: Object.fromEntries(KINDS.map(kind => [kind, { ...DEFAULTS.profiles[kind], ...raw.profiles?.[kind] }]))
+      profiles
     };
     text(value.acknowledgeLabel, 'acknowledgeLabel', 60);
     if (value.acknowledgeLabel.startsWith('-') || /[;=\r\n]/.test(value.acknowledgeLabel)) {
@@ -42,8 +74,12 @@ export class ConfigStore {
     range(value.repeatMinutes, 'repeatMinutes', 0.1, 1440);
     if (!['both', 'sound', 'notification'].includes(value.repeatMode)) throw new Error('Invalid repeatMode.');
     this.validateAudio(value.audio);
-    for (const [kind, profile] of Object.entries(value.profiles)) {
-      text(profile.title, `profiles.${kind}.title`, 160);
+    for (const [name, profile] of Object.entries(value.profiles)) {
+      text(profile.title, `profiles.${name}.title`, 160);
+      if (profile.description !== undefined) text(profile.description, `profiles.${name}.description`, 1000);
+      for (const key of ['icon', 'messageFile']) {
+        if (profile[key] != null && typeof profile[key] !== 'string') throw new Error(`profiles.${name}.${key} must be a path or null.`);
+      }
       this.validateAudio({ ...value.audio, ...profile.audio });
     }
     return value;
@@ -57,9 +93,18 @@ export class ConfigStore {
 
   resolve(file) { return path.resolve(this.file ? path.dirname(this.file) : process.cwd(), file); }
 
-  async profile(kind) {
+  async listProfiles() {
     const config = await this.read();
-    const profile = config.profiles[kind];
+    return Object.entries(config.profiles).map(([name, profile]) => ({
+      name, kind: profile.kind, title: profile.title, description: profile.description ?? null
+    }));
+  }
+
+  async profile(name) {
+    profileName(name);
+    const config = await this.read();
+    if (!Object.hasOwn(config.profiles, name)) throw new Error(`Unknown notification profile: ${name}. Use list_notification_profiles to discover available profiles.`);
+    const profile = config.profiles[name];
     const audio = { ...config.audio, ...profile.audio };
     if (audio.file) {
       audio.file = this.resolve(audio.file);
@@ -78,6 +123,6 @@ export class ConfigStore {
     }
     let template = null;
     if (profile.messageFile) template = await readFile(this.resolve(profile.messageFile), 'utf8');
-    return { ...config, ...profile, icon, audio, template };
+    return { ...config, profile: name, kind: profile.kind, title: profile.title, icon, audio, template };
   }
 }

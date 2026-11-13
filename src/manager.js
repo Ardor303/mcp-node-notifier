@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { KINDS, range, text } from './config.js';
+import { KINDS, range, text, profileName } from './config.js';
 
 export class NotificationManager {
   constructor({ config, desktop, audio, clock = globalThis, now = Date.now, log = console.error }) {
@@ -11,17 +11,21 @@ export class NotificationManager {
 
   async notify(input) {
     if (this.closed) throw new Error('Notification manager is closed.');
-    if (!KINDS.includes(input.kind)) throw new Error('kind must be success, error, waiting or info.');
+    if (input.kind !== undefined && !KINDS.includes(input.kind)) throw new Error('kind must be success, error, waiting or info.');
+    if (input.profile !== undefined) profileName(input.profile);
+    if (input.kind === undefined && input.profile === undefined) throw new Error('Provide kind or profile.');
     text(input.message, 'message', 2000);
     if (input.title !== undefined) text(input.title, 'title', 160);
     if (input.task_id !== undefined) text(input.task_id, 'task_id', 200);
-    if (input.kind === 'waiting' && !input.task_id) throw new Error('waiting requires a stable task_id, unique to the chat/task.');
     if (input.sound !== undefined && typeof input.sound !== 'boolean') throw new Error('sound must be a boolean.');
     if (input.repeat_minutes !== undefined) range(input.repeat_minutes, 'repeat_minutes', 0, 1440);
     if (input.repeat_minutes > 0 && input.repeat_minutes < 0.1) throw new Error('The minimum repeat interval is 0.1 minutes.');
-    if (input.kind !== 'waiting' && input.repeat_minutes > 0) throw new Error('Only waiting notifications can repeat.');
     if (input.repeat_mode !== undefined && !['both', 'sound', 'notification'].includes(input.repeat_mode)) throw new Error('Invalid repeat_mode.');
-    const settings = await this.config.profile(input.kind);
+    const settings = await this.config.profile(input.profile ?? input.kind);
+    if (input.kind !== undefined && input.kind !== settings.kind) throw new Error(`Profile ${settings.profile} has kind=${settings.kind}, not ${input.kind}.`);
+    input = { ...input, kind: settings.kind, profile: settings.profile };
+    if (input.kind === 'waiting' && !input.task_id) throw new Error('waiting requires a stable task_id, unique to the chat/task.');
+    if (input.kind !== 'waiting' && input.repeat_minutes > 0) throw new Error('Only waiting notifications can repeat.');
     const minutes = input.kind === 'waiting' ? input.repeat_minutes ?? settings.repeatMinutes : 0;
     const repeatMode = input.repeat_mode ?? settings.repeatMode;
     if (minutes && repeatMode === 'sound' && (!settings.audio.file || settings.audio.volume === 0 || input.sound === false)) {
@@ -45,8 +49,9 @@ export class NotificationManager {
   async deliver(entry, repeat, initialSettings) {
     if (entry.status !== 'active') return;
     try {
-      const settings = initialSettings || await this.config.profile(entry.input.kind);
+      const settings = initialSettings || await this.config.profile(entry.input.profile);
       if (entry.status !== 'active') return;
+      if (settings.kind !== entry.input.kind) throw new Error('The profile kind changed. Start a new notification to use its new behavior.');
       const show = !repeat || entry.repeatMode !== 'sound';
       const play = entry.input.sound !== false && (!repeat || entry.repeatMode !== 'notification');
       const onError = error => {
@@ -98,11 +103,12 @@ export class NotificationManager {
   }
 
   summary(entry) {
-    return { id: entry.id, task_id: entry.input.task_id ?? null, kind: entry.input.kind, status: entry.status,
+    return { id: entry.id, task_id: entry.input.task_id ?? null, kind: entry.input.kind, profile: entry.input.profile, status: entry.status,
       repeating: entry.status === 'active' && entry.intervalMs > 0, repeat_minutes: entry.intervalMs / 60000,
       repeat_mode: entry.repeatMode, deliveries: entry.count, last_error: entry.lastError };
   }
   list() { return [...this.entries.values()].map(entry => this.summary(entry)); }
+  listProfiles() { return this.config.listProfiles(); }
   prune() {
     for (const [id, entry] of this.entries) {
       if (this.entries.size <= 200) break;

@@ -106,12 +106,26 @@ This is a tool the agent calls; installing it alone does not add automatic hooks
 
 ## Tools
 
+### How the agent discovers the tools
+
+The server describes its tools through MCP itself; the agent does not need to read this README to discover them.
+
+- During initialization, the server advertises its tool capability and supplies usage instructions, including how to use task IDs and stop reminders.
+- `tools/list` returns `notify`, `acknowledge_notification`, `list_notifications` and `list_notification_profiles`, each with a description, a JSON Schema for its arguments and behavior annotations. The schemas describe parameter types, required fields and allowed values.
+- `tools/call` invokes the selected tool. The server also validates requests, for example requiring `task_id` for waiting notifications.
+
+The current release uses the initialization-based MCP protocol supported by SDK 1.32.2, up to revision **2025-11-25**. It does not yet implement the newer 2026-07-28 protocol. See the corresponding [MCP tool specification](https://modelcontextprotocol.io/specification/2025-11-25/server/tools) and [initialization specification](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle). The definitions used at runtime live in [src/server.js](src/server.js).
+
+The client makes these definitions available to the agent. Your instructions still determine when you want notifications; discovery alone does not enable automatic notifications for every event.
+
 ### `notify`
 
 - `success`: “Task completed” — a one-time completion notification.
 - `error`: “Task failed” — a one-time failure notification.
 - `waiting`: “Your input is needed” — an acknowledgement button and optional repeats.
 - `info`: “Progress update” — a one-time milestone notification.
+
+Select a built-in profile with `kind`, or any configured profile by its name with `profile`. One of these is required. A named profile supplies its own kind; if you provide both fields, they must agree.
 
 ```json
 {
@@ -127,6 +141,7 @@ Use a stable `task_id` unique to the chat/task. It is required for `waiting`. A 
 
 Optional settings:
 
+- `profile`: a profile name from `list_notification_profiles`, such as `customNotify`.
 - `title`: override the configured profile title.
 - `sound: false`: mute this notification.
 - `repeat_minutes`: waiting only; `0` disables repeats, otherwise 0.1–1440 minutes. Default: 5 minutes.
@@ -148,9 +163,51 @@ Stops repeats and current custom audio for that notification. The button does th
 
 Call with `{}` to inspect notifications in this MCP connection: state, delivery count, repeat settings and `last_error`. States include `active`, `sent`, `acknowledged` and `superseded`.
 
+### `list_notification_profiles`
+
+Call with `{}` to discover the built-in and custom profiles in the current configuration. Returns their names, kinds, titles and optional descriptions. Use a returned `name` as `notify.profile`. The list reloads from configuration on each call.
+
 ## Custom sounds, icons and text
 
-Both example configurations work as supplied. Edit your copy in `config.local.json`; it is ignored by Git.
+Both example configurations work as supplied. Customize your copy in `config.local.json`.
+
+### Add your own profiles
+
+Profile names and notification types are separate. For example, `customNotify` can be a profile of kind `waiting`. The kind controls behavior: `waiting` supports reminders and an acknowledgement button; `success`, `error` and `info` are one-time notifications.
+
+Both example configurations include this working starter profile. To add one to an existing configuration, add its entry under `profiles`:
+
+```json
+{
+  "profiles": {
+    "customNotify": {
+      "kind": "waiting",
+      "description": "Questions that need an answer during a long-running task.",
+      "title": "Your input is needed for this task",
+      "audio": { "volume": 70, "maxSeconds": 8 }
+    }
+  }
+}
+```
+
+Keep your existing profile entries. A custom profile inherits the title, icon, audio settings and message template from its configured built-in kind profile (`waiting` here), then applies its own overrides. Audio values also inherit the global defaults. `description` tells the agent when this profile is useful.
+
+For a separate sound, add `"file": "assets/audio/NotifySound.mp3"` inside this profile's `audio` object once that file exists. You can also override `icon` and `messageFile`; all paths remain relative to the configuration file.
+
+The agent can then call `notify` with:
+
+```json
+{
+  "profile": "customNotify",
+  "task_id": "chat-123:asset-import",
+  "message": "Which import option should I use?",
+  "repeat_minutes": 5
+}
+```
+
+No separate `kind` argument is needed. Existing calls such as `{"kind":"waiting", ...}` still work.
+
+Names are case-sensitive, start with an ASCII letter, and contain up to 64 letters, digits, underscores or hyphens. Custom names require a `kind` of `success`, `error`, `waiting` or `info`. The four built-in names keep their original kinds. New profiles and settings are read without restarting the server; changing the kind of an active reminder requires a new `notify` call.
 
 ### Add your own sound
 
@@ -172,6 +229,38 @@ Place your recording at `assets/audio/NotifySound.mp3`, then change the `audio` 
 - Custom-file playback silences the native toast sound. `file: null` uses the system sound, whose volume cannot be independently controlled here. `volume: 0` mutes sound.
 - Each profile can override `audio`, for example a different file or volume for a waiting notification.
 
+### A different sound for each notification type
+
+The top-level `audio` section supplies defaults. Each entry under `profiles` can override the file, volume and playback limit separately. The agent chooses a built-in profile with `kind`, or a custom one with `profile`; the selected profile determines the sound.
+
+For example, with your own recordings at the paths below:
+
+```json
+{
+  "audio": { "file": null, "volume": 50, "maxSeconds": 4 },
+  "profiles": {
+    "success": {
+      "audio": { "file": "assets/audio/Success.mp3" }
+    },
+    "error": {
+      "audio": { "file": "assets/audio/Error.mp3", "volume": 75 }
+    },
+    "waiting": {
+      "audio": { "file": "assets/audio/Waiting.mp3", "volume": 70, "maxSeconds": 8 }
+    },
+    "info": {
+      "audio": { "file": "assets/audio/NotifySound.mp3", "volume": 35 }
+    }
+  }
+}
+```
+
+This excerpt shows only audio settings. Add the `audio` entries to your existing profiles, keeping their titles and icons. Use paths to files you have actually created; these recordings are not included.
+
+Settings omitted from a profile inherit the top-level audio defaults: in this example, success uses volume 50 and a four-second limit. Set a profile's `audio.file` to `null` to use the system sound, or its `audio.volume` to `0` to mute that type.
+
+Audio is selected through the chosen **profile**, not by passing an arbitrary file path in an individual `notify` call. A call can mute its sound with `sound: false`.
+
 ### Icons and message templates
 
 - Included icons: `assets/icons/success.png`, `error.png`, `waiting.png`, `info.png` — transparent 256 × 256 PNGs.
@@ -181,7 +270,7 @@ Place your recording at `assets/audio/NotifySound.mp3`, then change the `audio` 
 - Audio, icons and templates reload on each delivery. An existing reminder's interval stays unchanged until a new `notify` call.
 - `MCP_NOTIFIER_CONFIG` can supply the configuration path instead of `--config`.
 
-See [asset details](assets/README.md) and [third-party notices](THIRD_PARTY_NOTICES.md). Personal audio is ignored by Git and excluded from the package.
+See [asset details](assets/README.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
 
 ## Platform behavior and troubleshooting
 

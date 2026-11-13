@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { ConfigStore, KINDS } from './config.js';
+import { ConfigStore } from './config.js';
 import { AudioPlayer } from './audio.js';
 import { createDesktop } from './desktop.js';
 import { NotificationManager } from './manager.js';
@@ -15,7 +15,7 @@ try {
     const config = new ConfigStore(values.config || process.env.MCP_NOTIFIER_CONFIG);
     await config.read();
     if (values.check) {
-      for (const kind of KINDS) await config.profile(kind);
+      for (const { name } of await config.listProfiles()) await config.profile(name);
       console.log(JSON.stringify({ valid: true, platform: process.platform, config: config.file, settings: await config.read() }, null, 2));
     } else {
       const manager = new NotificationManager({ config, desktop: createDesktop(), audio: new AudioPlayer() });

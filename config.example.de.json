@@ -7,6 +7,12 @@
     "success": { "title": "Aufgabe abgeschlossen", "icon": "assets/icons/success.png" },
     "error": { "title": "Aufgabe fehlgeschlagen", "icon": "assets/icons/error.png" },
     "waiting": { "title": "Deine Antwort wird benötigt", "icon": "assets/icons/waiting.png" },
-    "info": { "title": "Zwischenstand", "icon": "assets/icons/info.png" }
+    "info": { "title": "Zwischenstand", "icon": "assets/icons/info.png" },
+    "customNotify": {
+      "kind": "waiting",
+      "description": "Beispiel für ein Rückfrageprofil; Zweck und Einstellungen nach Bedarf anpassen.",
+      "title": "Deine Antwort zu dieser Aufgabe wird benötigt",
+      "audio": { "volume": 70, "maxSeconds": 8 }
+    }
   }
 }

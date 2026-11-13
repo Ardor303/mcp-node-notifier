@@ -7,7 +7,7 @@ function fixture() {
   const shown = [];
   const played = [];
   const stopped = [];
-  const config = { profile: async () => ({ title: 'Title', icon: null, template: null, acknowledgeLabel: 'Seen', repeatMinutes: 5, repeatMode: 'both', audio: { file: '/sound.wav', volume: 50, maxSeconds: 4 } }) };
+  const config = { profile: async name => ({ profile: name, kind: name, title: 'Title', icon: null, template: null, acknowledgeLabel: 'Seen', repeatMinutes: 5, repeatMode: 'both', audio: { file: '/sound.wav', volume: 50, maxSeconds: 4 } }) };
   const desktop = { show: async (options, ack) => { shown.push({ ...options, ack }); }, dismiss() {}, close: async () => {} };
   const audio = { play: async id => { played.push(id); }, stop: id => stopped.push(id), close() {} };
   const clock = { setTimeout: callback => { const job = { callback }; jobs.add(job); return job; }, clearTimeout: job => jobs.delete(job) };
@@ -98,5 +98,47 @@ test('invalid intervals and missing task identity never start a timer', async ()
     { kind: 'success', message: 'Done', repeat_minutes: 1 },
     { kind: 'waiting', message: 'Question', task_id: 'x', sound: false, repeat_mode: 'sound' }
   ]) await assert.rejects(f.manager.notify(input));
+  assert.equal(f.jobs.size, 0);
+});
+
+test('custom profiles retain waiting behavior and custom completion resolves the same task', async () => {
+  const f = fixture();
+  const base = f.config.profile;
+  const requests = [];
+  f.config.profile = async name => {
+    requests.push(name);
+    const kind = name === 'customNotify' ? 'waiting' : 'success';
+    return { ...await base(kind), profile: name, title: name };
+  };
+  await assert.rejects(f.manager.notify({ profile: 'customNotify', message: 'Question' }), /task_id/);
+  const waiting = await f.manager.notify({ profile: 'customNotify', task_id: 'task', message: 'Question' });
+  assert.equal(waiting.kind, 'waiting');
+  assert.equal(waiting.profile, 'customNotify');
+  assert.equal(f.shown[0].title, 'customNotify');
+  assert.equal(f.shown[0].acknowledge, true);
+  await f.tick();
+  assert.equal(requests.at(-1), 'customNotify');
+  assert.equal(f.shown.length, 2);
+  await assert.rejects(f.manager.notify({ kind: 'success', profile: 'customNotify', task_id: 'task', message: 'Mismatch' }), /has kind=waiting/);
+  assert.equal(f.manager.list()[0].status, 'active');
+  assert.equal(f.jobs.size, 1);
+  const done = await f.manager.notify({ profile: 'customDone', task_id: 'task', message: 'Done' });
+  assert.equal(done.kind, 'success');
+  assert.equal(f.manager.list()[0].status, 'superseded');
+  assert.equal(f.jobs.size, 0);
+  await f.manager.close();
+});
+
+test('changing a profile kind cannot silently change an active reminder', async () => {
+  const f = fixture();
+  const base = await f.config.profile('waiting');
+  f.config.profile = async () => ({ ...base, profile: 'customNotify' });
+  const result = await f.manager.notify({ profile: 'customNotify', task_id: 'task', message: 'Question' });
+  f.config.profile = async () => ({ ...base, profile: 'customNotify', kind: 'info' });
+  await f.tick();
+  assert.equal(f.shown.length, 1);
+  assert.equal(f.played.length, 1);
+  assert.match(f.manager.list()[0].last_error, /profile kind changed/);
+  f.manager.acknowledge(result.id);
   assert.equal(f.jobs.size, 0);
 });

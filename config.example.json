@@ -7,6 +7,12 @@
     "success": { "title": "Task completed", "icon": "assets/icons/success.png" },
     "error": { "title": "Task failed", "icon": "assets/icons/error.png" },
     "waiting": { "title": "Your input is needed", "icon": "assets/icons/waiting.png" },
-    "info": { "title": "Progress update", "icon": "assets/icons/info.png" }
+    "info": { "title": "Progress update", "icon": "assets/icons/info.png" },
+    "customNotify": {
+      "kind": "waiting",
+      "description": "Example waiting profile; customize its purpose and settings.",
+      "title": "Your input is needed for this task",
+      "audio": { "volume": 70, "maxSeconds": 8 }
+    }
   }
 }
