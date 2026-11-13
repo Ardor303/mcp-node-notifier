@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Select built-in or custom profiles in the standalone demo with `--profile`, preserving their configured title, icon, audio and message template.
 - Named custom notification profiles with explicit kinds and inheritance from the configured built-in profiles.
 - Optional `notify.profile` selection and `list_notification_profiles` for live profile discovery. Existing `kind` calls remain supported.
 - Configuration checks now include custom profile assets and reject unknown or mismatched profile selections.

@@ -81,6 +81,16 @@ Die Vorlage verwendet die vier mitgelieferten Icons und deinen System-Benachrich
 
 Für englische Titel und Buttons stattdessen `config.example.json` kopieren und die Demo mit `--lang en` starten. Ohne Konfiguration sind die eingebauten Standardtexte englisch. `--check` prüft Einstellungen und Dateien ohne Meldung oder Audiowiedergabe.
 
+Ein bestimmtes Profil aus deiner `config.local.json` gezielt testen, zum Beispiel `customNotify`:
+
+```sh
+npm run demo -- --config config.local.json --lang de --profile customNotify
+```
+
+Mit `--profile` verwendet die Demo den konfigurierten Titel, das Icon, die Audioeinstellungen und eine eventuell hinterlegte Nachrichtenvorlage dieses Profils. `--lang` bestimmt nur den Demo-Nachrichtentext. Das Profil muss in der Konfiguration existieren; auch die eingebauten Namen `success`, `error`, `waiting` und `info` sind möglich. `waiting` erinnert im Test alle 15 Sekunden bis zur Bestätigung, höchstens zwei Minuten. Andere Typen werden einmal angezeigt; nach der Anzeige-/Audiophase beendet sich die Demo automatisch. Mit `--silent` lässt sich der Ton ausschalten. `--center-test` ist nur für `waiting` gedacht und erinnert alle zwei Minuten bei höchstens drei Minuten Testdauer; `--max-minutes 5` ändert die maximale Testdauer.
+
+Jeder Demo-Aufruf startet einen eigenen Prozess mit dem Code aus dem aktuellen Repository und liest die angegebene Konfiguration frisch ein. Dafür muss kein MCP-Client laufen oder neu gestartet werden.
+
 ## Mit dem MCP-Client verbinden
 
 Einen **lokalen STDIO-Server** einrichten. Der Befehl ist die Node.js-Programmdatei; die Argumente verweisen auf `src/cli.js` und deine Konfiguration. Absolute Pfade verwenden. Den Node.js-Pfad findest du in PowerShell mit `(Get-Command node).Source`, unter macOS/Linux mit `command -v node`.

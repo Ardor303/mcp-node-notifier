@@ -81,6 +81,16 @@ The example includes the four icons and uses your system notification sound. **N
 
 For German titles and buttons, copy `config.example.de.json` instead and use `--lang de` for the demo. The built-in defaults without a configuration are English. `--check` validates configuration and assets without showing a notification or playing sound.
 
+Test a specific profile from your `config.local.json`, such as `customNotify`:
+
+```sh
+npm run demo -- --config config.local.json --lang en --profile customNotify
+```
+
+With `--profile`, the demo uses that profile's configured title, icon, audio settings and optional message template. `--lang` only selects the demo message language. The profile must exist in the configuration; built-in names `success`, `error`, `waiting` and `info` also work. During the test, `waiting` repeats every 15 seconds until acknowledged, for up to two minutes. Other kinds display once, and the demo exits automatically after the display/audio preview. Use `--silent` to mute sound. `--center-test` is only for `waiting`: it repeats every two minutes with a three-minute test limit. `--max-minutes 5` changes the maximum test duration.
+
+Each demo invocation starts a separate process using the code in the current repository and reads the selected configuration afresh. No running MCP client or MCP restart is needed.
+
 ## Connect your MCP client
 
 Configure a **local STDIO server**. The command is your Node.js executable; the arguments point to `src/cli.js` and your configuration. Use absolute paths. Find Node.js with `(Get-Command node).Source` in PowerShell or `command -v node` on macOS/Linux.
