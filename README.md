@@ -95,7 +95,14 @@ Each demo invocation starts a separate process using the code in the current rep
 
 Configure a **local STDIO server**. The command is your Node.js executable; the arguments point to `src/cli.js` and your configuration. Use absolute paths. Find Node.js with `(Get-Command node).Source` in PowerShell or `command -v node` on macOS/Linux.
 
-For Codex, add an entry to your user-level `~/.codex/config.toml`. Example Windows paths:
+The examples below use **user-level configuration**, so the notifier is available across projects. Complete the installation above first, then expand your client. Adjust the Windows example paths to your installation; on macOS/Linux, use that machine's absolute paths. The server must run in your logged-in desktop session to display notifications there.
+
+When editing an existing client configuration, add the `node-notifier` entry alongside your other servers. The client's configuration launches the process; the separate `config.local.json` contains notification profiles, sounds and icons.
+
+<details>
+<summary><strong>Codex — desktop app, CLI and IDE extension</strong></summary>
+
+Add this entry to `~/.codex/config.toml` (on Windows: `%USERPROFILE%\.codex\config.toml`):
 
 ```toml
 [mcp_servers.node-notifier]
@@ -106,7 +113,108 @@ startup_timeout_sec = 20
 tool_timeout_sec = 30
 ```
 
-Adjust all paths to your installation. On macOS/Linux, use the absolute paths on that machine. Other local MCP clients use the same command and arguments in their own STDIO configuration. Restart the MCP server or client after adding it. A ChatGPT web conversation does not automatically load this local configuration.
+Restart the MCP connection or Codex after saving. Use `/mcp` to inspect the connected servers. See the [official OpenAI MCP documentation](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
+
+</details>
+
+<details>
+<summary><strong>Claude Desktop</strong></summary>
+
+Edit `claude_desktop_config.json` at the default location for your OS:
+
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Linux: `~/.config/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "node-notifier": {
+      "command": "C:/Program Files/nodejs/node.exe",
+      "args": [
+        "D:/mcp-node-notifier/src/cli.js",
+        "--config",
+        "D:/mcp-node-notifier/config.local.json"
+      ]
+    }
+  }
+}
+```
+
+Fully quit and reopen Claude Desktop after saving. Check the connection in its local MCP server settings. See the [official MCP guide for Claude Desktop](https://modelcontextprotocol.io/docs/develop/connect-local-servers) and [Claude's local MCP help](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop).
+
+</details>
+
+<details>
+<summary><strong>Claude Code</strong></summary>
+
+With the Claude Code CLI installed, run this in PowerShell on Windows:
+
+```powershell
+claude mcp add --transport stdio --scope user node-notifier -- "C:/Program Files/nodejs/node.exe" "D:/mcp-node-notifier/src/cli.js" --config "D:/mcp-node-notifier/config.local.json"
+claude mcp get node-notifier
+```
+
+`--scope user` makes the server available across projects. On macOS/Linux, use the same command with your local executable and repository paths. Restart your Claude Code session and use `/mcp` to check the connection. See the [official Claude Code MCP documentation](https://code.claude.com/docs/en/mcp).
+
+</details>
+
+<details>
+<summary><strong>Cursor</strong></summary>
+
+Add the server to `~/.cursor/mcp.json` (on Windows: `%USERPROFILE%\.cursor\mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "node-notifier": {
+      "type": "stdio",
+      "command": "C:/Program Files/nodejs/node.exe",
+      "args": [
+        "D:/mcp-node-notifier/src/cli.js",
+        "--config",
+        "D:/mcp-node-notifier/config.local.json"
+      ]
+    }
+  }
+}
+```
+
+Open **Customize** in Cursor and enable `node-notifier`. If the changed configuration has not been picked up, restart Cursor. See the [official Cursor MCP documentation](https://cursor.com/docs/mcp).
+
+</details>
+
+<details>
+<summary><strong>VS Code with GitHub Copilot</strong></summary>
+
+For current Copilot sessions, edit `~/.copilot/mcp-config.json` (on Windows: `%USERPROFILE%\.copilot\mcp-config.json`). If `COPILOT_HOME` is set, use `mcp-config.json` in that directory instead. The guided alternative is **MCP: Add Server** in the Command Palette, with **Copilot Global** as the destination.
+
+```json
+{
+  "mcpServers": {
+    "node-notifier": {
+      "type": "stdio",
+      "command": "C:/Program Files/nodejs/node.exe",
+      "args": [
+        "D:/mcp-node-notifier/src/cli.js",
+        "--config",
+        "D:/mcp-node-notifier/config.local.json"
+      ],
+      "tools": ["*"]
+    }
+  }
+}
+```
+
+Use **MCP: List Servers** in your local Copilot session to check the connection. This example uses Copilot's native configuration format; editor-managed `.vscode/mcp.json` files have a different schema. See the [official VS Code MCP configuration reference](https://code.visualstudio.com/docs/agents/reference/mcp-configuration).
+
+</details>
+
+After connecting, ask your agent:
+
+> Use node-notifier's list_notification_profiles tool to show my available profiles. Then send an info notification saying “Connection test successful”.
+
+Other local MCP clients can use the same executable and arguments in their STDIO configuration. A ChatGPT or Claude web chat does not automatically load these local files.
 
 Example instruction for your agent:
 
